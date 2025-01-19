@@ -7,10 +7,7 @@ dotenv.config();
 export async function Verify(req, res, next) {
     try {
         const token = req.cookies.jwt;
-        console.log(token, 'token');
-        console.log(req.cookies, 'cookies');
-        
-        
+
         if (!token) return res.status(401).json({ message: "Unauthorized access. Token missing." });
 
         jwt.verify(token, process.env.SECRET_ACCESS_TOKEN, async (err, decoded) => {            
@@ -44,7 +41,7 @@ export function VerifyRole(req, res, next) {
     try {
         const user = req.user;
         const { role } = user;
-        if (role !== "user") {
+        if (role !== "admin") {
             return res.status(401).json({
                 status: "failed",
                 message: "You are not authorized to view this page.",

@@ -20,7 +20,14 @@ export async function Register(req, res) {
       });
     }
 
-    const newUser = new User({ name, email, password });
+    const newUser = new User({
+      name,
+      email,
+      password,
+      role: "admin",
+    });
+    console.log(newUser);
+
     const savedUser = await newUser.save();
 
     const { password: _, ...userData } = savedUser._doc;
@@ -42,25 +49,33 @@ export async function Login(req, res) {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email }).select("+password");
-    if (!user)
+    const user = await User.findOne({ email, role: "admin" }).select(
+      "+password"
+    );
+    console.log(user);
+
+    if (!user) {
       return res.status(401).json({
         status: "failed",
         data: [],
         message:
           "Invalid email or password. Please try again with the correct credentials.",
       });
+    }
 
+    console.log("Plaintext Password:", password);
+    console.log("Hashed Password from DB:", user.password);
     // Validate password
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid)
+
+    if (!isPasswordValid) {
       return res.status(401).json({
         status: "failed",
         data: [],
         message:
           "Invalid email or password. Please try again with the correct credentials.",
       });
-
+    }
     const token = user.generateAccessJWT();
 
     let options = {
@@ -68,7 +83,7 @@ export async function Login(req, res) {
       httpOnly: true,
       secure: false,
     };
-    res.cookie('jwt', token, options);
+    res.cookie("jwt", token, options);
 
     res.status(200).json({
       status: "success",
@@ -91,12 +106,12 @@ export async function Logout(req, res) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
     });
-    res.setHeader('Clear-Site-Data', '"cookies"');
-    res.status(200).json({ message: 'You are logged out!' });
+    res.setHeader("Clear-Site-Data", '"cookies"');
+    res.status(200).json({ message: "You are logged out!" });
   } catch (err) {
     res.status(500).json({
-      status: 'error',
-      message: 'Internal Server Error',
+      status: "error",
+      message: "Internal Server Error",
     });
   }
   res.end();
