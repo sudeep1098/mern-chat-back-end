@@ -26,7 +26,6 @@ export async function Register(req, res) {
       password,
       role: "admin",
     });
-    console.log(newUser);
 
     const savedUser = await newUser.save();
 
@@ -52,7 +51,6 @@ export async function Login(req, res) {
     const user = await User.findOne({ email, role: "admin" }).select(
       "+password"
     );
-    console.log(user);
 
     if (!user) {
       return res.status(401).json({
@@ -63,8 +61,6 @@ export async function Login(req, res) {
       });
     }
 
-    console.log("Plaintext Password:", password);
-    console.log("Hashed Password from DB:", user.password);
     // Validate password
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
@@ -79,9 +75,8 @@ export async function Login(req, res) {
     const token = user.generateAccessJWT();
 
     let options = {
-      maxAge: 20 * 60 * 1000,
-      httpOnly: true,
-      secure: false,
+      maxAge: 3600 * 1000,
+      secure: process.env.NODE_ENV === "prod",
     };
     res.cookie("jwt", token, options);
 
@@ -103,8 +98,7 @@ export async function Logout(req, res) {
     const accessToken = req.cookies.jwt;
     if (!accessToken) return res.sendStatus(204);
     res.clearCookie("jwt", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "prod",
     });
     res.setHeader("Clear-Site-Data", '"cookies"');
     res.status(200).json({ message: "You are logged out!" });

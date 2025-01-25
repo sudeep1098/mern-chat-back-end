@@ -64,9 +64,8 @@ export async function Login(req, res) {
     const token = user.generateAccessJWT();
 
     let options = {
-      maxAge: 20 * 60 * 1000,
-      httpOnly: true,
-      secure: false,
+      maxAge: 3600 * 1000,
+      secure: process.env.NODE_ENV === "prod",
     };
     res.cookie('jwt', token, options);
 
@@ -88,11 +87,10 @@ export async function Logout(req, res) {
     const accessToken = req.cookies.jwt;
     if (!accessToken) return res.sendStatus(204);
     res.clearCookie("jwt", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "prod",
     });
     res.setHeader('Clear-Site-Data', '"cookies"');
-    res.status(200).json({ message: 'You are logged out!' });
+    res.status(200).json({ status: 'success', message: 'You are logged out!' });
   } catch (err) {
     res.status(500).json({
       status: 'error',

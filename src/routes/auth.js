@@ -44,6 +44,6 @@ router.get("/user", Verify, (req, res) => {
   });
 });
 
-router.get('/logout', Logout);
+router.get('/logout', Verify, Logout);
 
 export default router;
