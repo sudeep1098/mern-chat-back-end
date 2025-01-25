@@ -1,26 +1,23 @@
-import Message from "../models/Message";
-import User from "../models/UserModel";
+import Message from "../models/MessageModel.js";
+import User from "../models/UserModel.js";
+import jwt from "jsonwebtoken";
 
 // Send a message
 export const sendMessage = async (req, res) => {
   try {
-    const { senderId, receiverId, content } = req.body;
-
-    const sender = await User.findById(senderId);
+    const { receiverId, message } = req.body;
+    const sender = req.user;
     const receiver = await User.findById(receiverId);
 
     if (!sender || !receiver) {
       return res.status(404).json({ message: "User not found" });
     }
-
     const newMessage = new Message({
-      sender: senderId,
+      sender: sender._id,
       receiver: receiverId,
-      content,
+      message,
     });
-
     await newMessage.save();
-
     return res.status(201).json(newMessage);
   } catch (error) {
     console.error(error);
@@ -28,23 +25,41 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-// Get all messages between two users
-export const getMessages = async (req, res) => {
+// Get messages sent by the current user
+export const getSentMessages = async (req, res) => {
   try {
-    const { userId1, userId2 } = req.params;
+    const senderId = req.user._id;
+    const { receiverId } = req.params;
+    // console.log(senderId, receiverId);
 
-    // Retrieve messages between the two users
     const messages = await Message.find({
-      $or: [
-        { sender: userId1, receiver: userId2 },
-        { sender: userId2, receiver: userId1 },
-      ],
-    }).sort({ createdAt: 1 }); // Sort messages by creation date in ascending order
+      sender: senderId,
+      receiver: receiverId,
+    }).sort({ createdAt: 1 });
 
-    return res.status(200).json(messages);
+    res.status(200).json(messages);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Server error" });
+    console.error("Error fetching sent messages:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get messages received by the current user
+export const getReceivedMessages = async (req, res) => {
+  try {
+    const receiverId = req.user._id;
+    const { senderId } = req.params;
+    console.log(receiverId, senderId);
+
+    const messages = await Message.find({
+      sender: senderId,
+      receiver: receiverId,
+    }).sort({ createdAt: 1 });
+
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error("Error fetching received messages:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
