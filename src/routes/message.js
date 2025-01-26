@@ -1,7 +1,6 @@
 import express from "express";
 import {
-  getSentMessages,
-  getReceivedMessages,
+  getMessages,
   markAsRead,
   sendMessage,
 } from "../controllers/messageController.js";
@@ -9,8 +8,7 @@ import { Verify } from "../middleware/verify.js";
 
 const router = express.Router();
 
-router.get("/sent/:receiverId", Verify, getSentMessages);
-router.get("/received/:receiverId", Verify, getReceivedMessages);
+router.post("/", Verify, getMessages);
 router.post("/send", Verify, sendMessage);
 router.patch("/:messageId/markAsRead", Verify, markAsRead);
 

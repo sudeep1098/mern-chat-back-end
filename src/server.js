@@ -21,15 +21,50 @@ const io = new Server(httpServer, {
   },
 });
 
-io.on("connection", (socket) => {
-  console.log("a user connected");
+let onlineUsers = new Map();
 
-  socket.on("message", (msg) => {
-    socket.emit("message", msg);
-    console.log(msg);
+io.on("connection", (socket) => {
+  console.log("user connected", socket.id);
+
+  socket.on("register", (userId) => {
+    onlineUsers.set(userId, socket.id);
   });
+
+  socket.on("send-message", (msg) => {
+    const receiverSocketId = onlineUsers.get(msg.receiver);
+    if (receiverSocketId) {
+      socket.to(receiverSocketId).emit("receive-message", msg);
+    }
+  });
+
+  socket.on("typing", (msg) => {
+    const receiverSocketId = onlineUsers.get(msg.receiver);
+    if (receiverSocketId) {
+      socket.to(receiverSocketId).emit("typing", msg);
+    }
+  });
+
+  socket.on("send-notification", (msg) => {
+    const receiverSocketId = onlineUsers.get(msg.receiver);
+    if (receiverSocketId) {
+      socket.to(receiverSocketId).emit("send-notification", msg);
+    }
+  });
+
+  socket.on("typing", (data) => {
+    const receiverSocketId = onlineUsers.get(data.receiver);    
+    if (receiverSocketId) {
+      socket.to(receiverSocketId).emit("typing", data);
+    }
+  });
+
   socket.on("disconnect", () => {
-    console.log("user disconnected");
+    onlineUsers.forEach((socketId, userId) => {
+      if (socketId === socket.id) {
+        onlineUsers.delete(userId);
+      }
+    });
+    console.log("user disconnected", socket.id);
   });
 });
 

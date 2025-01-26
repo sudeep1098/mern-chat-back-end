@@ -26,8 +26,6 @@ export const getUserById = async (req, res) => {
 export const getUserByToken = async (req, res) => {
   try {
     const user = req.user;
-    console.log(user);
-
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: "Error retrieving user", error });

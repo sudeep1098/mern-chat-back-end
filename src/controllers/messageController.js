@@ -25,59 +25,36 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-// Get messages sent by the current user
-export const getSentMessages = async (req, res) => {
+//get all messages
+export const getMessages = async (req, res) => {
   try {
-    const senderId = req.user._id;
-    const { receiverId } = req.params;
-    // console.log(senderId, receiverId);
+    const sender = req.user;
+    const { receiverId } = req.body;
+    const receiver = await User.findById(receiverId);
+
+    if (!sender || !receiver) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     const messages = await Message.find({
-      sender: senderId,
-      receiver: receiverId,
-    }).sort({ createdAt: 1 });
+      $or: [
+        { sender: sender._id, receiver: receiver._id },
+        { sender: receiver._id, receiver: sender._id },
+      ],
+    }).sort({ updatedAt: 1 });
 
-    res.status(200).json(messages);
+    return res.status(200).json(messages);
   } catch (error) {
-    console.error("Error fetching sent messages:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-// Get messages received by the current user
-export const getReceivedMessages = async (req, res) => {
-  try {
-    const receiverId = req.user._id;
-    const { senderId } = req.params;
-    console.log(receiverId, senderId);
-
-    const messages = await Message.find({
-      sender: senderId,
-      receiver: receiverId,
-    }).sort({ createdAt: 1 });
-
-    res.status(200).json(messages);
-  } catch (error) {
-    console.error("Error fetching received messages:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
 // Mark a message as read
 export const markAsRead = async (req, res) => {
   try {
-    const { messageId } = req.params;
-
-    // Find the message by its ID and mark it as read
-    const message = await Message.findById(messageId);
-
-    if (!message) {
-      return res.status(404).json({ message: "Message not found" });
-    }
-
-    message.read = true;
-    await message.save();
-
+    const { messageId } = req.body;
+    await Message.findByIdAndUpdate(messageId, { read: true });
     return res.status(200).json({ message: "Message marked as read" });
   } catch (error) {
     console.error(error);
